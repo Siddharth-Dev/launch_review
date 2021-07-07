@@ -50,51 +50,57 @@ public class LaunchReviewPlugin implements MethodCallHandler, FlutterPlugin, Act
             if (appId == null) {
                 appId = activity.getPackageName();
             }
-
-            Intent rateIntent = new Intent(Intent.ACTION_VIEW,
-                    Uri.parse("market://details?id=" + appId));
             boolean marketFound = false;
 
-            // find all applications able to handle our rateIntent
-            final List<ResolveInfo> otherApps =  activity.getPackageManager()
-                    .queryIntentActivities(rateIntent, 0);
-            for (ResolveInfo otherApp: otherApps) {
-                // look for Google Play application
-                if (otherApp.activityInfo.applicationInfo.packageName
-                        .equals("com.android.vending")) {
+            try {
+                Intent rateIntent = new Intent(Intent.ACTION_VIEW,
+                        Uri.parse("market://details?id=" + appId));
 
-                    ActivityInfo otherAppActivity = otherApp.activityInfo;
-                    ComponentName componentName = new ComponentName(
-                            otherAppActivity.applicationInfo.packageName,
-                            otherAppActivity.name
-                    );
-                    // make sure it does NOT open in the stack of your activity
-                    rateIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    // task reparenting if needed
-                    rateIntent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-                    // if the Google Play was already open in a search result
-                    //  this make sure it still go to the app page you requested
-                    rateIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    // this make sure only the Google Play app is allowed to
-                    // intercept the intent
-                    rateIntent.setComponent(componentName);
-                    Toast.makeText(activity, "Please Rate Application", Toast.LENGTH_SHORT).show();
+                // find all applications able to handle our rateIntent
+                final List<ResolveInfo> otherApps = activity.getPackageManager()
+                        .queryIntentActivities(rateIntent, 0);
+                for (ResolveInfo otherApp : otherApps) {
+                    // look for Google Play application
+                    if (otherApp.activityInfo.applicationInfo.packageName
+                            .equals("com.android.vending")) {
 
-                    activity.startActivity(rateIntent);
-                    marketFound = true;
-                    break;
+                        ActivityInfo otherAppActivity = otherApp.activityInfo;
+                        ComponentName componentName = new ComponentName(
+                                otherAppActivity.applicationInfo.packageName,
+                                otherAppActivity.name
+                        );
+                        // make sure it does NOT open in the stack of your activity
+                        rateIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        // task reparenting if needed
+                        rateIntent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                        // if the Google Play was already open in a search result
+                        //  this make sure it still go to the app page you requested
+                        rateIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        // this make sure only the Google Play app is allowed to
+                        // intercept the intent
+                        rateIntent.setComponent(componentName);
+//                    Toast.makeText(activity, "Please Rate Application", Toast.LENGTH_SHORT).show();
 
+                        activity.startActivity(rateIntent);
+                        marketFound = true;
+                        break;
+
+                    }
                 }
+            } catch (Exception e) {
+
             }
 
             // if GP not present on device, open web browser
             if (!marketFound) {
                 try {
-                    activity.startActivity(new Intent(Intent.ACTION_VIEW,
-                            Uri.parse("market://details?id=" + appId)));
-                } catch (ActivityNotFoundException e) {
-                    activity.startActivity(new Intent(Intent.ACTION_VIEW,
-                            Uri.parse("https://play.google.com/store/apps/details?id=" + appId)));
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setData(Uri.parse(
+                            "https://play.google.com/store/apps/details?id="+ appId));
+                    intent.setPackage("com.android.vending");
+                    activity.startActivity(intent);
+                } catch (Exception e) {
+                    Toast.makeText(activity, "Unable to open Play Store app.", Toast.LENGTH_SHORT).show();
                 }
             }
             result.success(null);
